@@ -1,53 +1,63 @@
 #!/bin/bash
 DAYS="$1"
-MILES="$2"
+MILES="$2" 
 RECEIPTS="$3"
 
 if [ $# -ne 3 ]; then
     exit 1
 fi
 
-# CORRECTED FORMULAS - Much smaller multipliers!
+# CAPPED REIMBURSEMENT SYSTEM - Key Discovery!
+# The 1960s system has CAPS to prevent abuse
+
 if [ "$DAYS" -eq 1 ]; then
-    # 1-day: Small base + tiny mile rate + receipts
-    base_amount=$(echo "scale=4; 50 + $MILES * 0.15 + $RECEIPTS" | bc)
+    # 1-day: Base + capped contributions
+    base=150
+    mile_contrib=$(echo "scale=2; $MILES * 0.4" | bc)
+    mile_cap=$(echo "if ($mile_contrib > 200) 200 else $mile_contrib" | bc)
+    receipt_cap=$(echo "if ($RECEIPTS > 500) 500 else $RECEIPTS" | bc)
+    base_amount=$(echo "scale=2; $base + $mile_cap + $receipt_cap" | bc)
     
 elif [ "$DAYS" -eq 2 ]; then
-    # 2-day: Different structure
-    base_amount=$(echo "scale=4; 100 + $MILES * 0.25 + $RECEIPTS" | bc)
+    # 2-day: Different caps  
+    base=200
+    mile_contrib=$(echo "scale=2; $MILES * 0.3" | bc)
+    mile_cap=$(echo "if ($mile_contrib > 350) 350 else $mile_contrib" | bc)
+    receipt_cap=$(echo "if ($RECEIPTS > 600) 600 else $RECEIPTS" | bc)
+    base_amount=$(echo "scale=2; $base + $mile_cap + $receipt_cap" | bc)
     
 elif [ "$DAYS" -eq 3 ]; then
-    # 3-day: MUCH smaller multiplier - this was your big error!
-    base_amount=$(echo "scale=4; 200 + $MILES * 0.10 + $RECEIPTS * 0.50" | bc)
+    # 3-day: THIS WAS THE KEY - CAPPED SYSTEM!
+    base=400
+    mile_contrib=$(echo "scale=2; $MILES * 0.2" | bc)
+    mile_cap=$(echo "if ($mile_contrib > 300) 300 else $mile_contrib" | bc)
+    receipt_contrib=$(echo "scale=2; $RECEIPTS * 0.5" | bc)
+    receipt_cap=$(echo "if ($receipt_contrib > 800) 800 else $receipt_contrib" | bc)
+    base_amount=$(echo "scale=2; $base + $mile_cap + $receipt_cap" | bc)
     
 elif [ "$DAYS" -eq 4 ]; then
-    base_amount=$(echo "scale=4; 150 + $MILES * 0.20 + $RECEIPTS * 0.80" | bc)
+    base=300
+    mile_contrib=$(echo "scale=2; $MILES * 0.25" | bc)
+    mile_cap=$(echo "if ($mile_contrib > 400) 400 else $mile_contrib" | bc)
+    receipt_cap=$(echo "if ($RECEIPTS > 700) 700 else $RECEIPTS" | bc)
+    base_amount=$(echo "scale=2; $base + $mile_cap + $receipt_cap" | bc)
     
 elif [ "$DAYS" -eq 5 ]; then
-    high_receipts=$(echo "$RECEIPTS > 1000" | bc -l)
-    if [ "$high_receipts" -eq 1 ]; then
-        base_amount=$(echo "scale=4; 100 + $MILES * 0.05 + $RECEIPTS * 1.00" | bc)
-    else
-        base_amount=$(echo "scale=4; 300 + $MILES * 0.30 + $RECEIPTS" | bc)
-    fi
-    
-elif [ "$DAYS" -ge 8 ]; then
-    # Long trips: Very small multipliers
-    base_amount=$(echo "scale=4; 500 + $MILES * 0.02 + $RECEIPTS * 0.90" | bc)
+    base=350
+    mile_contrib=$(echo "scale=2; $MILES * 0.2" | bc)
+    mile_cap=$(echo "if ($mile_contrib > 500) 500 else $mile_contrib" | bc)
+    receipt_contrib=$(echo "scale=2; $RECEIPTS * 0.6" | bc)
+    receipt_cap=$(echo "if ($receipt_contrib > 1000) 1000 else $receipt_contrib" | bc)
+    base_amount=$(echo "scale=2; $base + $mile_cap + $receipt_cap" | bc)
     
 else
-    # 6-7 days
-    base_amount=$(echo "scale=4; 200 + $MILES * 0.15 + $RECEIPTS * 0.85" | bc)
+    # 6+ days: Lower caps (vacation penalty)
+    base=250
+    mile_contrib=$(echo "scale=2; $MILES * 0.1" | bc)
+    mile_cap=$(echo "if ($mile_contrib > 300) 300 else $mile_contrib" | bc)
+    receipt_contrib=$(echo "scale=2; $RECEIPTS * 0.4" | bc)
+    receipt_cap=$(echo "if ($receipt_contrib > 600) 600 else $receipt_contrib" | bc)
+    base_amount=$(echo "scale=2; $base + $mile_cap + $receipt_cap" | bc)
 fi
 
-# Much smaller corrections
-correction=0
-receipts_rounded=$(printf "%.0f" "$RECEIPTS")
-
-# Remove the huge lookup corrections - they were wrong
-# if [ "$DAYS" -eq 3 ] && [ "$MILES" -eq 93 ]; then
-#     correction=-1
-# fi
-
-final_amount=$(echo "scale=4; $base_amount + $correction" | bc)
-printf "%.2f\n" "$final_amount"
+printf "%.2f\n" "$base_amount"
